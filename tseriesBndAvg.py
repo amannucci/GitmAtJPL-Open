@@ -13,6 +13,8 @@ import numpy as np
 import sys, os
 import ionotime as IT
 
+# Test command line
+# tseriesBndAvg.py -i runDir/3DUSR_t110425 -o runQuietAmi110425WindSHilat350.txt -v 'Neutral Velocity (north)' -l 60.0 60.0 --lonband 235.0 290.0 --localt 12.0 16.0 -a 350.0 --mode Lat 
 if (__name__ == '__main__'):
     import argparse
     p = argparse.ArgumentParser(description='Calculate time series of boundary variables from GITM output. A boundary is defined in terms of a single longitude and a latitude range, or a single latitude and a longitude and/or solar local time range. A mode input determines which boundary is calculated. Default mode is latitude boundary (Lat).')
@@ -38,27 +40,36 @@ if (__name__ == '__main__'):
     flist.sort() # Sort order is time order. 
     
     fout = open(args.outfile, 'w')
-    fout.write("#Variable {:s} over {:6.2f}-{:6.2f} Lat at Altitude {:6.2f}\n".format(args.var, args.lat[0], args.lat[1], args.alt))
-    fout.write("#Lon range: {:6.2f}-{:6.2f}      LT range: {:6.2f}-{:6.2f}\n")
-    fout.write("#TimeJ2000       TimeStr                         LonAvg                 LTavg\n")
+    if (args.mode == 'Lat'):
+        fout.write("#Variable {:s} over {:6.2f} - {:6.2f} Longitude at Latitude {:6.2f} and Altitude {:6.2f}\n".format(args.var, args.lon[0], args.lon[1], args.lat[0], args.alt))
+        fout.write("#Local time range {:6.2f}-{:6.2f}\n".format(args.localt[0], args.localt[1]))
+    elif (args.mode == 'Lon'):
+        fout.write("#Variable {:s} over {:6.2f} - {:6.2f} Latitude at Longitude {:6.2f} and Altitude {:6.2f}\n".format(args.var, args.lat[0], args.lat[1], args.lon[0], args.alt))
+    else:
+        sys.stderr.write("ERROR: tseriesBndAvg: Unsupported mode input {:s}. Halting.\n".format(args.mode))
+        sys.exit(1)
+    fout.write("#TimeJ2000       TimeStr                         LatAvg     LonAvg     LTavg\n")
     for fs in flist:
-        sys.stdout.write("tseriesRegAvg.py: Processing file "+fs+"\n")
+        sys.stdout.write("tseriesBndAvg.py: Processing file "+fs+"\n")
         binf = gitm.GitmBin(fs)
         if (not (args.var in binf.keys())):
-            sys.stderr.write("ERROR: tseriesRegAvg.py: Requested variable >>>"+var+"<<< not in file "+fs+". Aborting.\n")
+            sys.stderr.write("ERROR: tseriesBndAvg.py: Requested variable >>>"+var+"<<< not in file "+fs+". Aborting.\n")
             sys.exit(1)
         dt = binf['time'] # python datetime object
-        secJ2000 = IT.to_J2000((dt.year, dt.month,\ # Seconds past J2000
+        secJ2000 = IT.to_J2000((dt.year, dt.month,\
                                 dt.day, dt.hour, \
                                 dt.minute, \
                                 dt.second+\
                                 1.0e-6*dt.microsecond))
         # Average over requested latitude and longitude or local time band.
-        [avglon, avglt, ia] = gitmLib.RegAverage(binf, args.var, args.alt*1000.0, args.lat[0]*np.pi/180.0, args.lat[1]*np.pi/180.0,\
-                                                 args.lon[0]*np.pi/180.0, args.lon[1]*np.pi/180.0, \
-                                                 args.localt[0], args.localt[1])
+        latrange = np.array(args.lat)*np.pi/180.0
+        lonrange = np.array(args.lon)*np.pi/180.0
+        ltrange = np.array(args.localt)
+        [avglon, avglat, avglt, ia] = gitmLib.boundaryAvg(binf, args.var, \
+                args.alt*1000.0, secJ2000, latrange, lonrange, \
+                ltrange, mode=args.mode)
         # Write to output file.
         dstr = dt.strftime('%Y-%m-%d/%H:%M:%S.%f')
         #
-        fout.write("{:15.3f}  {:s}  {:12.5e}  {:12.5e}\n".format(secJ2000, dstr, avglon, avglt))
+        fout.write("{:15.3f}  {:s}    {:9.3e}  {:9.3e}  {:9.3e}\n".format(secJ2000, dstr, avglat, avglon, avglt))
     fout.close()

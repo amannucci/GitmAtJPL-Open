@@ -161,26 +161,30 @@ def boundaryAvg(binf, var, alt, ut, latrange, lonrange, ltrange,mode='Lat'):
     '''
     # Get the array. [lon,lat,alt]
     data = np.array(binf[var])
-    nalt = len(data[0,0,:])
+    altitudes = np.array(binf['Altitude'][0,0,:])
+    nalt = len(altitudes)
     # If a specific height, get the altitude index.
     # We assume altitude is independent of lon/lat.
-    latval = binf['Latitude'][0,:,0]
-    lonval = binf['Longitude'][:,0,0]
+    latval = np.array(binf['Latitude'][0,:,0])
+    lonval = np.array(binf['Longitude'][:,0,0])
     if (mode == 'Lat'):
         avglat = 0.0 # This is not computed. 
         # Get latitude index. 
-        indlat = mylib.findNearest(latrange[0], \
-                      np.array(binf['Latitude'][0,:,0]))
+        indlat = mylib.findNearest(latrange[0], latval)
         # Restrict in longitude. This requires a function call. 
-        indlon, = mylib.lonindices(lonrange[0], lonrange[1], \
-                                   lonval)
+        indlon = mylib.lonindices(lonrange[0]*180.0/np.pi, \
+                                  lonrange[1]*180.0/np.pi, \
+                                  lonval*180.0/np.pi)
         # Determine the longitudes that fit the LT criterion.
-        lonlt1 = mylib.lt2lon(lonrange[0], ut)
-        lonlt2 = mylib.lt2lon(lonrange[1], ut)
-        indlonlt, = mylib.lonindices(lonlt1, lonlt2, lonval)
+        lonlt1 = mylib.lt2lon(ltrange[0], ut)*np.pi/180.0
+        if (lonlt1 < 0.0): lonlt1 = lonlt1 + 360.0
+        lonlt2 = mylib.lt2lon(ltrange[1], ut)*np.pi/180.0
+        if (lonlt2 < 0.0): lonlt2 = lonlt2 + 360.0
+        indlonlt = mylib.lonindices(lonlt1*180.0/np.pi,
+                                    lonlt2*180.0/np.pi, \
+                                    lonval*180.0/np.pi)
         if (alt > 0):
-            indalt = mylib.findNearest(alt, \
-                     np.array(binf['Altitude'][0,0,:]))
+            indalt = mylib.findNearest(alt, altitudes)
             avglon = np.mean(data[indlon, indlat, indalt])
             avglt = np.mean(data[indlonlt, indlat, indalt])
         else: # Height integrated
