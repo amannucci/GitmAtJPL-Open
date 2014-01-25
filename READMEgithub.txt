@@ -23,3 +23,19 @@ a short-hand.
 >>git remote add cluster https://github.com/amannucci/GitmAtJPL-Open.git
 >>git push cluster ClusterBranch
 (Fails also)
+
+I've uploaded new code (tested on Mac) to the hub. Is there an easy 
+way to get it on the cluster (w/o wiping out what I have on hub?).
+
+Added a new public key to the hub. Account settings.
+See https://help.github.com/articles/generating-ssh-keys
+
+Now this works.
+git push cluster ClusterBranch
+git remote -v
+git remote add cluster git@github.com:amannucci/GitmAtJPL-Open
+cluster: git@github.com:amannucci/GitmAtJPL-Open
+
+To update GAIM with code, do this:
+git fetch
+get merge origin/master
