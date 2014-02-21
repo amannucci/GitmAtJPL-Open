@@ -1,0 +1,6 @@
+#Copyright 2014, by the California Institute of Technology. 
+#ALL RIGHTS RESERVED. 
+#United States Government Sponsorship acknowledged. 
+
+Python routines, leveragin U Michigan's gitm.py library, to read
+and possibly manipulate gitm output.

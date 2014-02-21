@@ -39,3 +39,12 @@ cluster: git@github.com:amannucci/GitmAtJPL-Open
 To update GAIM with code, do this:
 git fetch
 get merge origin/master
+
+Perhaps the sequence goes like this:
+master branch is "stasis"
+Need to make a change, create a branch. 
+Test within that branch. 
+If OK, then merge branch back into master and delete the branch.
+Version control is accomplished via "commits", not via branches. 
+
+Right now, I have one branch, master. 
