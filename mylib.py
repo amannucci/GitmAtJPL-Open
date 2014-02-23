@@ -706,3 +706,118 @@ def ionex2ncFileName(fn):
     the netCDF file name.
     '''
     return fn+"_nc"
+
+class DumpFile(object):
+    '''Class for handling dump files. Mainly, to read in time sequential
+    order without storing all of the data.'''
+    def __init__(self, filename):
+        '''Init method for DumpFile class. Pass in the file name to
+        read. Will create the generator object that is subsequently used.'''
+        self.filename = filename
+        self.gen = dataLines(self.filename)
+        self.tstart = 1.0e27
+        self.tend = -1.0e27
+
+    def rdtimelimits(self, start, stop, cols):
+        '''Input time limits in J2000 (start, stop) and cols which
+        is an array of 0-starting column numbers. A list of data
+        within the specified time window, for those columns, will
+        be returned as a list of numpy 1-d arrays.
+        Note: sequential calling. Once a certain time is specified,
+        the function will not rewind to earlier times. MUST BE CALLED
+        IN TIME SEQUENTIAL ORDER.'''
+        lineslist = []
+        try:
+            line = next(self.gen)
+        except StopIteration:
+            return []
+        tcurrent = float(line.split()[0])
+        # Reach the begin time
+        while (tcurrent < start):
+            try:
+                line = next(self.gen)
+            except StopIteration:
+                break
+            tcurrent = float(line.split()[0])
+        # We are now ready to start reading
+        choke = False
+        while ((tcurrent >= start) and (tcurrent < stop)):
+            lineslist.append(line)
+            try:
+                line = next(self.gen)
+            except StopIteration:
+                choke = True
+                break
+            tcurrent = float(line.split()[0])
+        if (not choke): lineslist.append(line)
+        fields = np.array([map(floatOrMiss, line.split()) for line in lineslist])
+        retval = []
+        for i in range(len(cols)):
+            retval.append(fields[:,cols[i]])
+
+        return retval
+
+    def rdnlines(self, n, cols):
+        '''Input number of lines to be read, and cols which
+        is an array of 0-starting column numbers. A list of data,
+        for those columns, will
+        be returned as a list of numpy 1-d arrays.
+        Note: sequential calling. Picks up where it was called last.'''
+        lineslist = []
+        try:
+            line = next(self.gen)
+        except StopIteration:
+            return []
+        # We are now ready to start reading
+        nline = 0
+        choke = False
+        while (nline < n-1):
+            lineslist.append(line)
+            try:
+                line = next(self.gen)
+            except StopIteration:
+                choke = True
+                break
+            nline = nline + 1
+        if (not choke): lineslist.append(line)
+        fields = np.array([map(floatOrMiss, line.split()) for line in lineslist])
+        retval = []
+        for i in range(len(cols)):
+            retval.append(fields[:,cols[i]])
+            
+        return retval
+
+def matlabLDiv(a, b):
+    '''Implements the matlab \ operator on arrays (maybe works
+    on matrices also).
+    Solves the "left divide" equation: a * x = b for x
+    Inputs:
+    a,b arrays
+    Returns: a \ b
+    Results depend on dimensions of matrices. See documentation for
+    matlab's MLDIVIDE operator \ .
+    Theory is on the Numpy for Matlab user's page.
+    http://wiki.scipy.org/NumPy_for_Matlab_Users
+    See also this site, but beware of caveats
+    http://stackoverflow.com/questions/1001634/array-division-translating-from-matlab-to-python
+    '''
+    import scipy.linalg as LA
+    # Check if a is square.
+    (r,c) = np.shape(a)
+    if (r == c): # Square
+        return LA.solve(a,b)
+    else:
+        return LA.lstsq(a,b)
+    
+def matlabRDiv(a, b):
+    '''Carries out matlab / operator on arrays (maybe works
+    on matrices also).
+    Solves the "right divide" equation: x*a = b for x.
+    Inputs: a,b arrays
+    Returns: a / b
+    Results depend on dimensions of matrices. See documentation for
+    matlab's MRDIVIDE operator / .
+    Theory is on the Numpy for Matlab user's page.
+    http://wiki.scipy.org/NumPy_for_Matlab_Users
+    '''
+    return np.transpose(matlabLDiv(b.T, a.T))
