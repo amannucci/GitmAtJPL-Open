@@ -82,7 +82,7 @@ def latAverage(binf, var, alt, latrange):
         for i in indlon:
             for j in range(nalt):
                 avg = avg + np.mean(data[i, indlat, j])
-        return [avg/(len(indlon)*nalt),-1]
+        return [avg/len(indlon),-1]
 
 def latRegAverage(binf, var, alt, ut, latrange, lonrange, ltrange):
     '''Compute regionally-averaged quantity at a specific altitude
@@ -134,7 +134,7 @@ def latRegAverage(binf, var, alt, ut, latrange, lonrange, ltrange):
         for i in indlonlt:
             for j in range(nalt):
                 avglt = avglt + np.mean(data[i, indlat, j])
-        return [avg/(len(indlon)*nalt), avglt/(len(indlonlt)*nalt), -1]
+        return [avg/len(indlon), avglt/len(indlonlt), -1]
 
 def boundaryAvg(binf, var, alt, ut, latrange, lonrange, ltrange,mode='Lat'):
     '''Calculates a variable along a latitude (parallel) or longitude
@@ -191,11 +191,9 @@ def boundaryAvg(binf, var, alt, ut, latrange, lonrange, ltrange,mode='Lat'):
             avglon = 0.0
             for i in range(nalt):
                 avglon = avglon + np.mean(data[indlon, indlat, i])
-            avglon = avglon/float(nalt)
             avglt = 0.0
             for i in range(nalt):
                 avglt = avglt + np.mean(data[indlon, indlat, i])
-            avglt = avglt/float(nalt)
             indalt = -1
     elif (mode == 'Lon'):
         # For this case, there is no LT average calculated, or lon.
@@ -215,9 +213,37 @@ def boundaryAvg(binf, var, alt, ut, latrange, lonrange, ltrange,mode='Lat'):
             avglat = 0.0
             for i in range(nalt):
                 avglat = avglat + np.mean(data[indlon, indlat, i])
-            avglat = avglat/float(nalt)
             indalt = -1
     else:
         sys.stderr.write("ERROR: gitmLib:boundaryAvg: Incorrect mode passed in ("+mode+"). Allowed values are Lat or Lon. \n")
         sys.exit(1)
     return [avglon, avglat, avglt, indalt]
+
+def locValue(binf, var, alt, lat, lon):
+    '''Returns time series of values at lat/lon. Altitude or integrated. 
+    Inputs:
+    binf: the binary gitm object (GitmBin)
+    var: the variable name
+    alt: the altitude or interest. Function will compute the index for
+      a nearby altitude. Use a negative value to obtain height-integrated.
+      Meters.
+    lat: latitude of interest. Will find nearest. Radians.
+    lon: longitude of interest. Will find nearest. Radians.
+    Returns:
+    [value, alt index used] alt index used if height integrated
+    is -1.
+    '''
+    # Get the array. [lon,lat,alt]
+    data = np.array(binf[var])
+    nalt = len(data[0,0,:])
+    # If a specific height, get the altitude index.
+    # We assume altitude is independent of lon/lat.
+    latval = np.array(binf['Latitude'][0,:,0])
+    lonval = np.array(binf['Longitude'][:,0,0])
+    indlat = mylib.findNearest(lat, latval)
+    indlon = mylib.findNearest(lon, lonval)
+    if (alt > 0):
+        indalt = mylib.findNearest(alt, np.array(binf['Altitude'][0,0,:]))
+        return [data[indlon, indlat, indalt],indalt]
+    else: # Height integrated.
+        return [np.sum(data[indlon, indlat, :]),-1]
