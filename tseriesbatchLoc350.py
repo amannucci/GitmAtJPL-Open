@@ -9,8 +9,8 @@ Locinputs = {0:['run09_20110424_weimer','run09QuietWei110424_Loc1_<>_Alt350.txt'
           2:['run12_20110424_amie','run12QuietAmi110424_Loc1_<>_Alt350.txt','350.0'],\
           3:['run13_20110428_amie','run13StormAmi110428_Loc1_<>_Alt350.txt','350.0'] }
 
-varlist = ["'O Density'", "'N2 Density'", "'Neutral Velocity (north)'", "'Neutral Temperature'", "'Ion Velocity (up)'"]
-abbrlist = ['ODens','N2dens','NW','Temp','IonVert']
+varlist = ["'Electron Density'","'O Density'", "'N2 Density'", "'Neutral Velocity (north)'", "'Neutral Temperature'", "'Ion Velocity (up)'"]
+abbrlist = ['eDens','ODens','N2dens','NW','Temp','IonVert']
 
 # Real events
 for i in Locinputs.keys():
