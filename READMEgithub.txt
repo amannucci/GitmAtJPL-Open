@@ -72,3 +72,16 @@ cluster remote (git@) seems to be needed for push changes from the cluster
 )
 
 NOTE: I've defined a key with my public key, this is the github PW for now.
+
+Adding a new file to repository. Let's review steps. New file copied into 
+the github directory.
+git status 
+git add new_file
+new_file is already staged.
+git commit
+git push cluster master
+
+To bring stuff in: (reminder)
+git fetch
+git merge origin/master
+(git merge cluster/master will probably work also)
