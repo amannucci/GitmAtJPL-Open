@@ -48,3 +48,5 @@ If OK, then merge branch back into master and delete the branch.
 Version control is accomplished via "commits", not via branches. 
 
 Right now, I have one branch, master. 
+
+NEXT: how do I commit a change on cluster, and synchronize?

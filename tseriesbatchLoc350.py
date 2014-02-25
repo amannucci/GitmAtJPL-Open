@@ -18,6 +18,6 @@ for i in Locinputs.keys():
     for j,var in enumerate(varlist):
        # Sub abbreviation into cstr[1] (Output file)
        outfile = cstr[1].replace('<>',abbrlist[j])
-       cmd='tseriesLoc.py -i /tec/xingmeng/RunsGITM/RunsEvent/'+cstr[0]+'/IO2/3DUSR -o '+outfile+" -v "+var+" -lat 22.8 -lon 234.0 -a "+cstr[2]
+       cmd='tseriesLoc.py -i /tec/xingmeng/RunsGITM/RunsEvent/'+cstr[0]+'/IO2/3DUSR -o '+outfile+" -v "+var+" --lat 22.8 --lon 234.0 -a "+cstr[2]
        sys.stdout.write("Executing: \n"+cmd+"\n")
-       #mylib.ex(cmd)
+       mylib.ex(cmd)
