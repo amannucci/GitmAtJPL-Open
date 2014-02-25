@@ -50,3 +50,25 @@ Version control is accomplished via "commits", not via branches.
 Right now, I have one branch, master. 
 
 NEXT: how do I commit a change on cluster, and synchronize?
+
+Here is how to commit, but no sync yet (gitpro.pdf online book):
+Stage the changes (done before commit)
+git add READMEgithub.txt tseriesbatchLoc350.py
+git status # For information
+git diff --cached # Shows the changes that are staged and ready to be committed
+git commit # Does the commit. 
+You will see the repository is not yet modified. github.com, login. 
+
+Here is how to sync: push command
+git push git@github.com:amannucci/GitmAtJPL-Open master
+(There should be a way to define my remote with git@ as I did with cluster above, but leave for now)
+(The following would probably work also:
+git push cluster master
+Use 
+git remote -v
+to see the listed remotes.
+origin remote (https://) seems to work with merges
+cluster remote (git@) seems to be needed for push changes from the cluster
+)
+
+NOTE: I've defined a key with my public key, this is the github PW for now.
