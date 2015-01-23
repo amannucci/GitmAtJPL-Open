@@ -38,7 +38,8 @@ if (__name__ == '__main__'):
             sys.stderr.write("ERROR: tseriesLatAvg.py: Requested variable >>>"+var+"<<< not in file "+fs+". Aborting.\n")
             sys.exit(1)
         # Average over requested latitude band.
-        [avg,ia] = gitmLib.latAverage(binf, args.var, args.alt*1000.0, args.lat[0]*np.pi/180.0, args.lat[1]*np.pi/180.0)
+        latrange = np.array(args.lat)*np.pi/180.0
+        [avg,ia] = gitmLib.latAverage(binf, args.var, args.alt*1000.0, latrange)
         # Write to output file.
         dt = binf['time']
         secJ2000 = IT.to_J2000((dt.year, dt.month,\

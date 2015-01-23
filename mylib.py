@@ -11,6 +11,7 @@ import ionotime as IT
 import sys
 from datetime import datetime
 import tomolib
+import shutil
 
 def dt2j2000(dt):
     """
@@ -97,7 +98,7 @@ def dataLinesX(file, commentChar='#', filter=[False,0]):
 # 
 #for line in exa("commands"):
 #    (contents)
-            
+
 def  ex    (command      ): return "".join(os.popen(command).readlines())
 def exa    (command      ): return os.popen(command).readlines()
 def eex    (command      ): return command+"\n"+ex(command)
@@ -193,7 +194,7 @@ def set_ylabel_size(ax, fsize):
     fsize: numerical font size in pts.
     '''
     tt = [str(i.get_text()) for i in ax.get_yticklabels()]
-#    print 'set ylabels', tt
+    #    print 'set ylabels', tt
     ax.set_yticklabels(tt, fontsize = fsize)
 
 # list2grid is a miraculous function that reads in three 1-d arrays
@@ -252,7 +253,7 @@ def detrend_quadratic(y):
     p = np.polyfit(x,y,2)
     resid = y - np.polyval(p, x)
     return resid
-# Cubic detrend. 
+# Cubic detrend.
 def detrend_cubic(y):
     '''A function that acts like the mlab functions detrend_none and
     detrend_linear, that returns residuals to a cubic fit to the
@@ -469,7 +470,7 @@ def lonindices(lonmin, lonmax, lonarr):
     elif ((arrcross) and (lonmaxZ > lonminZ)):
         ind, = np.where((lonarrZ >= lonminZ) & (lonarrZ <= lonmaxZ))
     return ind
-    
+        
 def dump(fname, headers=None, arrays=None):
     '''
     mylib.dump: debugging function that dumps data from arrays
@@ -493,7 +494,7 @@ def dump(fname, headers=None, arrays=None):
             st = st+'{:17.10E} '.format(arrays[j][i])
         fout.write(st+'\n')
     fout.close()
-    
+            
 def rd_txt(fname):
     '''Wrapper for the standard approach to reading numeric columns.
     Returns the fields variable. Each variable is accessed via:
@@ -616,7 +617,7 @@ def ltindices(lower, upper, series):
         ind, = np.where(((series >= lower) & (series <= 24.0)) | \
                         ((series >= 0.0) & (series < upper)))
         return ind
-    
+        
 def ensure_dir(file):
     '''ensure_dir checks for a path name for the file. If the path
     does not exist, it will be created leading to the file.
@@ -628,7 +629,7 @@ def ensure_dir(file):
     if not os.path.isdir(d):
         os.makedirs(d)
     return
-    
+        
 def hyphendate(yyyymmdd):
     '''Creates a hyphenated form of date YYYYMMDD -> YYYY-MM-DD.
     Returns hyphenated form.
@@ -643,13 +644,34 @@ def unzipfile(fs):
     All names fully qualified (not just base name)
     '''
     if (fs[-3:] == '.gz'):
-        ex('gunzip '+fs)
+        ex('gunzip -f '+fs)
         return fs[0:-3]
     elif (os.path.isfile(fs+'.gz')):
-        ex('gunzip '+fs+'.gz')
+        ex('gunzip -f '+fs+'.gz')
         return fs
     else:
         return fs
+
+def idzipfile(fs):
+    '''This will return the file name of the existing file. What
+    is passed in may or may not have the .gz ending. What is returned
+    is what actually exists.
+    '''
+    if (fs[-3:] == '.gz'):
+        if (os.path.isfile(fs)):
+            return fs
+        elif (os.path.isfile(fs[0:-3])):
+            return fs[0:-3]
+        else:
+            return ''
+    else:
+        if (os.path.isfile(fs)):
+            return fs
+        elif (os.path.isfile(fs+'.gz')):
+            return fs+'.gz'
+        else:
+            return ''
+            
 
 def chooseDateFormat(yyyymmdd, rootdir, filepath):
     '''chooseDateFormat will return the format for a date, either
@@ -695,7 +717,7 @@ def findNearest(val, arrval):
     Returns:
     Index into arrval. arrval[index] is closest matching value.
     '''
-    return (np.abs(arrval - val)).argmin()
+    return int((np.abs(arrval - val)).argmin())
 
 def ionex2ncFileName(fn):
     '''Converts an ionex file name to a netCDF file name. Just appends
@@ -784,7 +806,7 @@ class DumpFile(object):
         retval = []
         for i in range(len(cols)):
             retval.append(fields[:,cols[i]])
-            
+                        
         return retval
 
 def matlabLDiv(a, b):
@@ -803,11 +825,15 @@ def matlabLDiv(a, b):
     '''
     import scipy.linalg as LA
     # Check if a is square.
-    (r,c) = np.shape(a)
-    if (r == c): # Square
+    try:
+        (r,c) = np.shape(a)
+    except ValueError: # In case a is of dim=1, cannot unpack two vals.
         return LA.solve(a,b)
     else:
-        return LA.lstsq(a,b)
+        if (r == c): # Square
+            return LA.solve(a,b)
+        else:
+            return LA.lstsq(a,b)
     
 def matlabRDiv(a, b):
     '''Carries out matlab / operator on arrays (maybe works
@@ -821,3 +847,29 @@ def matlabRDiv(a, b):
     http://wiki.scipy.org/NumPy_for_Matlab_Users
     '''
     return np.transpose(matlabLDiv(b.T, a.T))
+
+def getTmpDir():
+    '''Provides a directory for temporary files.
+    No inputs. Returns directory name as a string without trailing slash.
+    '''
+    td = os.environ['TMPDIR']
+    if (td[-1] == '/'):
+        return os.environ['TMPDIR'][0:-1]
+    else:
+        return os.environ['TMPDIR']
+
+def createShadowFile(fs):
+    '''Copies file to a temp area for further file manipulation and
+    read. Typically might us TMPDIR.
+    Input: file name to be copied.
+    Returns: location of copied file.
+    '''
+    td = getTmpDir()
+    target = td+'/'+os.path.basename(fs)
+    try:
+        shutil.copyfile(fs, target) # Copies file
+        return target
+    except:
+        return ''
+    
+    
