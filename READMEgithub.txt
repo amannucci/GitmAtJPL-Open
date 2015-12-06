@@ -86,3 +86,18 @@ git fetch
 git merge origin/master
 (git merge cluster/master will probably work also)
 
+1/23/15:
+Since knowledge is rusty, let me explain what I did when
+A) Updating code on Mac
+B) Bringing it to cluster
+
+Start github for mac. It shows changes. Commit the changes, and add
+a message.
+After commit, sync.
+
+To update cluster:
+go to github directory in projects/gitm
+git fetch
+git merge origin/master.
+
+Don't do this now, for this small change. 

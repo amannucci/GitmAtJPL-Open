@@ -255,6 +255,27 @@ def locValue(mObject, time, var, alt, lat, lon):
     else: # Height integrated.
         return [np.sum(data[indlon, indlat, :]),-1.0]
 
+def twoDValue(mObject, time, var, lat, lon):
+    '''Returns time series of values at lat/lon for 2D data structure.  
+    Inputs:
+    mObject: an instance of a ModelHandler object (gitmLib)
+    time: J2000 time that variable is desired.
+    var: the variable name
+    lat: latitude of interest. Will find nearest. Radians.
+    lon: longitude of interest. Will find nearest. Radians.
+    Returns:
+    [value] 
+    '''
+    # Get the array. [lon,lat]
+    data = mObject.getVariable(var, time)
+    # We assume altitude is independent of lon/lat.
+    latval = collapseDim(mObject.getVariable('Latitude',time), 1)
+    lonval = collapseDim(mObject.getVariable('Longitude',time), 0)
+    indlat = mylib.findNearest(lat, latval)
+    indlon = mylib.findNearest(lon, lonval)
+    return [data[indlon, indlat]]
+
+
 class TgcmBin(object):
     '''A Tiegcm class'''
     def __init__(self, filename):
@@ -741,7 +762,53 @@ def collapseDim(arr,dim):
             return arr[0,:]
     elif (len(np.shape(arr)) == 1):
         return arr
-        
+
+def normalizeVar(varname):
+    '''Normalizes GITM variable name for use in a file name. Replaces
+    spaces and brackets with underscores. Returns normalizes name.'''
+    # Rules:
+    # Spaces -> _
+    # ( and ) -> _
+    # First 4 chars of words separated by spaces.
+    # Mesh words together
+    words = varname.split()
+    st = ""
+    for w in words:
+        ww = w.replace("(","")
+        www = ww.replace(")","")
+        l = len(www)
+        if (len(www) > 4): l = 4
+        st = st + www[0:l] + "_"
+    return st[0:-1]
+
+def finDiff(arr, indlon, indlat, indalt):
+    '''Computes values at faces of an RLL voxel. Does not ack. boundary issues
+    at this time.
+    Inputs: arr: the array of interest.
+    indlon, indlat, indlat: indices for E,N,V direction space.
+    Returns: array values at:
+    East face, west face, north face, south face, high face, low face
+    '''
+    arr_C = arr[indlon, indlat, indalt]
+    # East face. 
+    arr_Epl = arr[indlon+1,indlat,indalt]
+    arr_Eplfc = (arr_Epl - arr_C)/2.0 + arr_C
+    # West face.
+    arr_Emi = arr[indlon-1,indlat,indalt]
+    arr_Emifc = (arr_C - arr_Emi)/2.0 + arr_Emi
+    # North face.
+    arr_Npl = arr[indlon,indlat+1,indalt]
+    arr_Nplfc = (arr_Npl - arr_C)/2.0 + arr_C
+    # South face.
+    arr_Nmi = arr[indlon,indlat-1,indalt]
+    arr_Nmifc = (arr_C - arr_Nmi)/2.0 + arr_Nmi
+    # Upper face.
+    arr_Apl = arr[indlon, indlat, indalt+1]
+    arr_Aplfc = (arr_Apl - arr_C)/2.0 + arr_C
+    # Lower face.
+    arr_Ami = arr[indlon, indlat, indalt-1]
+    arr_Amifc = (arr_C - arr_Ami)/2.0 + arr_Ami
+    return [arr_Eplfc, arr_Emifc, arr_Nplfc, arr_Nmifc, arr_Aplfc, arr_Amifc]
     
 if (__name__ == "__main__"):
     # For testing new model handling paradigm.
