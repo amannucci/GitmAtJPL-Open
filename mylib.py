@@ -4,6 +4,7 @@
 #Any commercial use must be negotiated with the 
 #Office of Technology Transfer at the California Institute of Technology.
 # A J Mannucci.
+from __future__ import print_function
 import datetime as DT
 import os
 import numpy as np
@@ -179,12 +180,12 @@ def set_xlabel_size(ax, fsize):
     ax: axis object
     fsize: numerical font size in pts.
     '''
-#    print 'Inside set xlabel size, ax = ', ax
-#    print 'Inside set xlabel the labels are: ', ax.get_xticklabels()
+#    print('Inside set xlabel size, ax = ', ax)
+#    print('Inside set xlabel the labels are: ', ax.get_xticklabels())
     tl = ax.get_xticklabels()
-#    print 'The first one is: ', tl[0]
+#    print('The first one is: ', tl[0])
     tt = [str(i.get_text()) for i in ax.get_xticklabels()]
-#    print 'set xlabels', tt
+#    print('set xlabels', tt)
     ax.set_xticklabels(tt, fontsize = fsize)
 
 def set_ylabel_size(ax, fsize):
@@ -194,7 +195,7 @@ def set_ylabel_size(ax, fsize):
     fsize: numerical font size in pts.
     '''
     tt = [str(i.get_text()) for i in ax.get_yticklabels()]
-    #    print 'set ylabels', tt
+    #    print('set ylabels', tt)
     ax.set_yticklabels(tt, fontsize = fsize)
 
 # list2grid is a miraculous function that reads in three 1-d arrays
@@ -304,7 +305,7 @@ def data_limiter(time_inner, data_series, time_outer):
     '''
     # Determine increasing or decreasing.
     if (len(time_inner) == 0):
-        print >>sys.stderr,'ERROR in data_limiter call (mylib). Empty time_inner.'
+        print('ERROR in data_limiter call (mylib). Empty time_inner.', file=sys.stderr)
         sys.exit(1)
     if (time_inner[-1] > time_inner[0]): # Increasing.
         inc_flag = True
@@ -470,6 +471,21 @@ def lonindices(lonmin, lonmax, lonarr):
     elif ((arrcross) and (lonmaxZ > lonminZ)):
         ind, = np.where((lonarrZ >= lonminZ) & (lonarrZ <= lonmaxZ))
     return ind
+
+def latLonList(latrange, lonrange, latarr, lonarr):
+    '''Creates a list of lat/lon pairs that exist within the specified
+    ranges based on the passed-in lat/lon arrays. Inclusive.
+    Returns indices into the arrays as a list. 
+    '''
+
+    # Make sure I fulfill conditions of lonindices.
+    if (not arrOrderCheck(lonarr)):
+        print("FATAL ERROR: mylib: latlonlist: input array is not meeting requirements", file=sys.stderr)
+        sys.exit(1)
+    lonind = lonindices(lonrange[0], lonrange[1], lonarr)
+    latind = np.where((latarr <= latrange[1]) & \
+                      (latarr >= latrange[0]))
+    return [latind, lonind]
         
 def dump(fname, headers=None, arrays=None):
     '''
@@ -708,6 +724,21 @@ def dateToIonexName(prefix, yymmdd):
     s = IT.from_J2000(t,'YYDOY')
     return prefix+s[2:5]+'0.'+s[0:2]+'i'
 
+def IonexNameToDate(prefix, name):
+    '''Takes an IONEX file name and returns the YYYYMMDD format, and
+    seconds past J2000. Uses prefix to find doy (scans past prefix).
+    Assumes prefix is unique. Also works for .nc file names. 
+    '''
+    if (name.find(prefix) < 0):
+        print("ERROR: IonexNameToDate: could not find file prefix in name. Returning blanks.", file=sys.stderr)
+        return []
+    i = name.find(prefix)+len(prefix)
+    doy = name[i:i+3]
+    yr = name[i+3+2:i+3+4]
+    t = IT.to_J2000(yr+doy,'YYDOY')
+    d = IT.from_J2000(t,'YYYYMMDD')
+    return [hyphendate(d), t]
+
 def findNearest(val, arrval):
     '''Finds index of passed in array that most closely matches
     input value.
@@ -721,13 +752,13 @@ def findNearest(val, arrval):
 
 def ionex2ncFileName(fn):
     '''Converts an ionex file name to a netCDF file name. Just appends
-    _nc. Assumes file is not compressed.
+    .nc. Assumes file is not compressed.
     Inputs:
     fn: the ionex name.
     Returns:
     the netCDF file name.
     '''
-    return fn+"_nc"
+    return fn+".nc"
 
 class DumpFile(object):
     '''Class for handling dump files. Mainly, to read in time sequential
@@ -872,4 +903,31 @@ def createShadowFile(fs):
     except:
         return ''
     
+def meanUT(utarr):
+    '''Computes the mean of a UT array.
+    Takes account of the fact that UT can bridge the 24 hour discontinuity,
+    assuming that the UT range in the array is < 12 hours. 
+    Input: array of UT hours.
+    Returns: mean hour of array, meaningfully interpreted.
+    NOTE: utarr is modified. 
+    '''
+    inarr = utarr.copy()
+    tmin = np.min(inarr)
+    tmax = np.max(inarr)
+    if (np.abs(tmax - tmin) > 12.0):
+        ind, = np.where(inarr < 12.0)
+        inarr[ind] = inarr[ind] + 24.0
+    m = np.mean(inarr)
+    if (m > 24.0): m = m - 24.0
+    return m
+
+def arrOrderCheck(arr):
+    '''Checks that an array is in ascending order and unique. If not, returns
+    False.
+    '''
+    [tmparr, tmpind] = np.unique(arr, return_index=True)
+    if (np.array_equal(tmpind, np.arange(len(arr)))):
+        return True
+    else:
+        return False
     
