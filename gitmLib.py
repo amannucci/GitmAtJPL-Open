@@ -255,6 +255,40 @@ def locValue(mObject, time, var, alt, lat, lon):
     else: # Height integrated.
         return [np.sum(data[indlon, indlat, :]),-1.0]
 
+def gblAverage(mObject, time, var, total=False):
+    '''Computes the global average of a model variable for a particular time.
+    Inputs: model object, the time of interest, the variable name.
+    total arg: if True, then return total not average. 
+    Returns: global average over all Lat/lon/alt.
+    '''
+    data = mObject.getVariable(var, time)
+    if (total):
+        return np.sum(data)
+    else:
+        return np.mean(data)
+        
+def maxAlt(mObj, time, var, altarr, latnow, lonnow):
+    '''Determines the altitude and index at which the input variable is a max
+    in altitude for that lat/lon.
+    Inputs: mObj -- model object.
+    time: time of interest.
+    var: variable of interest.
+    altarr: altitude array for the model.
+    latnow, lonnow: location. Radians for gitm.
+    '''
+    maxval = -1.0e35
+    maxind = 0
+    for (ia,alt) in enumerate(altarr): # Altitudes. 
+        # Pull out value.
+        [locval, ialt] = locValue(mObj, time, var, alt, \
+                                  latnow, \
+                                  lonnow)
+        if (locval > maxval):
+            altmax = alt
+            maxval = locval
+            maxind = ialt # or ia
+    return [altmax, maxind]
+    
 def twoDValue(mObject, time, var, lat, lon):
     '''Returns time series of values at lat/lon for 2D data structure.  
     Inputs:
