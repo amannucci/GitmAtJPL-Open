@@ -255,17 +255,31 @@ def locValue(mObject, time, var, alt, lat, lon):
     else: # Height integrated.
         return [np.sum(data[indlon, indlat, :]),-1.0]
 
-def gblAverage(mObject, time, var, total=False):
-    '''Computes the global average of a model variable for a particular time.
+def gblAverage(mObject, time, var):
+    '''Computes the global average of a model variable that describes energy
+    for a particular time.
     Inputs: model object, the time of interest, the variable name.
-    total arg: if True, then return total not average. 
+    total arg: if True, then return total not average.
+    Variable name must be energy related. Multiplication by Neutral Density
+    and Specific Heat. 
     Returns: global average over all Lat/lon/alt.
     '''
     data = mObject.getVariable(var, time)
-    if (total):
-        return np.sum(data)
-    else:
-        return np.mean(data)
+    ndens =  mObject.getVariable('Neutral Density', time)
+    heatcap = mObject.getVariable('Specific Heat', time)
+    prod = data*ndens*heatcap # Should be an energy density.
+    latval = collapseDim(mObject.getVariable('Latitude',time), 1)
+    lonval = collapseDim(mObject.getVariable('Longitude',time), 0)
+    altval = collapseDim(mObject.getVariable('Altitude',time),2)
+    hval = 0.0
+    icount = 0
+    for (ilat,lat) in enumerate(latval):
+        for (ilon, lon) in enumerate(lonval):
+            for (ih,h) in enumerate(altval[0:-1]):
+                dh = altval[ih+1]-altval[ih]
+                hval = hval + dh*(prod[ilon,ilat,ih+1]+prod[ilon,ilat,ih])/2.0
+                icount += 1
+    return hval/icount
         
 def maxAlt(mObj, time, var, altarr, latnow, lonnow):
     '''Determines the altitude and index at which the input variable is a max
